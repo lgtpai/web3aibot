@@ -1,0 +1,15 @@
+{
+  "networks": {
+    "pharos-testnet": {
+      "name": "Pharos Atlantic Testnet",
+      "rpcUrl": "https://atlantic.dplabs-internal.com",
+      "chainId": 688689,
+      "symbol": "PHRS",
+      "explorerUrl": "https://pharosscan.xyz",
+      "explorerApiUrl": "https://pharosscan.xyz",
+      "usdcAddress": "0xE0BE08c77f415F577A1B3A9aD7a1Df1479564ec8",
+      "usdcDecimals": 6
+    }
+  },
+  "default": "pharos-testnet"
+}

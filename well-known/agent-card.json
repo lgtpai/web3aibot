@@ -1,0 +1,49 @@
+{
+  "name": "猎狗AI行情技能",
+  "description": "基于 Pharos 公链的加密行情预测技能。提供币种支撑位/压力位、推土机趋势方向、大盘多空体制预测。免费查询多空方向，x402 支付解锁支撑压力位及详细分析。",
+  "url": "http://localhost:8402",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "猎狗AI (LGAI)",
+    "url": "https://lgai.xyz"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "authentication": {
+    "schemes": ["x402"],
+    "credentials": null
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "predict_token",
+      "name": "币种行情预测",
+      "description": "查询指定币种的多空方向(免费)和支撑位/压力位/趋势详情(付费 0.1 USDC)",
+      "tags": ["crypto", "prediction", "support", "resistance"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": [
+        "查询 BTC 行情预测",
+        "SOL 现在多还是空",
+        "ETH 的支撑位在哪里"
+      ]
+    },
+    {
+      "id": "market_prediction",
+      "name": "大盘趋势预测",
+      "description": "查询整体市场多空体制(免费)和详细大盘数据(付费 0.1 USDC)",
+      "tags": ["market", "regime", "btc", "breadth"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "examples": [
+        "大盘现在什么趋势",
+        "查询 LGAI 大盘预测",
+        "市场是多头还是空头"
+      ]
+    }
+  ]
+}

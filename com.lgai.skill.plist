@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.lgai.skill</string>
+  <key>ProgramArguments</key>
+  <array>
+    <!-- 替换为你的 python 路径 -->
+    <string>/Users/eric/crypto_quant/.venv/bin/python</string>
+    <string>-m</string>
+    <string>uvicorn</string>
+    <string>server:app</string>
+    <string>--host</string>
+    <string>0.0.0.0</string>
+    <string>--port</string>
+    <string>8402</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/eric/crypto_quant/skills/lgai_pharos</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- 必填: 你的 Pharos 钱包收款地址 -->
+    <key>LGAI_RECIPIENT_ADDRESS</key>
+    <string>0xYOUR_WALLET_ADDRESS_HERE</string>
+    <!-- Pharos Atlantic 测试网 facilitator -->
+    <key>PHAROS_FACILITATOR_URL</key>
+    <string>https://x402.pharos.xyz/facilitator</string>
+    <!-- 本地调试时设为 true (不验证 facilitator) -->
+    <key>LGAI_DEV_MODE</key>
+    <string>false</string>
+    <!-- 技能对外 URL (如已有域名可替换) -->
+    <key>LGAI_SKILL_BASE_URL</key>
+    <string>http://localhost:8402</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/eric/crypto_quant/logs/lgai_skill.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/eric/crypto_quant/logs/lgai_skill_err.log</string>
+</dict>
+</plist>

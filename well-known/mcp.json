@@ -1,0 +1,100 @@
+{
+  "mcpVersion": "2024-11-05",
+  "name": "lgai-pharos-skill",
+  "version": "1.0.0",
+  "description": "猎狗AI Pharos链上行情预测技能 — 支撑压力位 / 多空方向 / 大盘体制",
+  "serverUrl": "http://localhost:8402",
+  "tools": [
+    {
+      "name": "predict_token_free",
+      "description": "【免费】查询币种多空方向。返回: direction(多/空/中性), run(连推次数), latest_price",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "币种符号, 如 BTC、ETH、SOL"
+          }
+        },
+        "required": ["token"]
+      },
+      "endpoint": {
+        "method": "GET",
+        "path": "/predict/{token}"
+      },
+      "pricing": {
+        "free": true
+      }
+    },
+    {
+      "name": "predict_token_detail",
+      "description": "【付费 0.1 USDC / x402】查询币种详细分析: 支撑位、压力位、趋势强度、推送历史、入场建议",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "币种符号, 如 BTC、ETH、SOL"
+          }
+        },
+        "required": ["token"]
+      },
+      "endpoint": {
+        "method": "GET",
+        "path": "/predict/{token}/detail"
+      },
+      "pricing": {
+        "free": false,
+        "scheme": "x402",
+        "amount": "0.1",
+        "asset": "USDC",
+        "network": "pharos-testnet"
+      }
+    },
+    {
+      "name": "market_free",
+      "description": "【免费】查询大盘多空方向 (LGAI 推土机体制)。返回: direction, regime_label",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "endpoint": {
+        "method": "GET",
+        "path": "/market"
+      },
+      "pricing": {
+        "free": true
+      }
+    },
+    {
+      "name": "market_detail",
+      "description": "【付费 0.1 USDC / x402】大盘详细预测: BTC/ETH状态、宽度、山寨体制、BTC连推方向",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "endpoint": {
+        "method": "GET",
+        "path": "/market/detail"
+      },
+      "pricing": {
+        "free": false,
+        "scheme": "x402",
+        "amount": "0.1",
+        "asset": "USDC",
+        "network": "pharos-testnet"
+      }
+    }
+  ],
+  "x402": {
+    "facilitatorUrl": "https://x402.pharos.xyz/facilitator",
+    "chainId": 688689,
+    "supportedAssets": [
+      {
+        "symbol": "USDC",
+        "address": "0xE0BE08c77f415F577A1B3A9aD7a1Df1479564ec8",
+        "decimals": 6
+      }
+    ]
+  }
+}
