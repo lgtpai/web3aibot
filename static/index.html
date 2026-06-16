@@ -542,7 +542,7 @@
 
         <!-- Free card -->
         <div class="card" id="freeCard">
-          <div class="card-title">免费预览</div>
+          <div class="card-title" data-i18n="free_preview">Free Preview</div>
           <div class="token-header">
             <span class="token-sym" id="rSymbol">—</span>
             <span class="direction-chip neutral" id="rDirChip">—</span>
@@ -550,21 +550,21 @@
           </div>
           <div class="metrics-row">
             <div class="metric-box">
-              <div class="metric-label">实时价格</div>
+              <div class="metric-label" data-i18n="live_price">Live Price</div>
               <div class="metric-value" id="rLivePrice">—</div>
             </div>
             <div class="metric-box">
-              <div class="metric-label">最新推送</div>
+              <div class="metric-label" data-i18n="latest_push">Latest Push</div>
               <div class="metric-value" id="rPushPrice">—</div>
               <div class="metric-sub" id="rPushTime">—</div>
             </div>
             <div class="metric-box">
-              <div class="metric-label">历史推送</div>
+              <div class="metric-label" data-i18n="push_hist_count">Push Count</div>
               <div class="metric-value" id="rPushCount">—</div>
             </div>
             <div class="metric-box" id="rLeaderBox" style="display:none">
-              <div class="metric-label">身份</div>
-              <div class="metric-value" style="color:var(--yellow)">⭐ 龙头</div>
+              <div class="metric-label" data-i18n="identity">Identity</div>
+              <div class="metric-value" style="color:var(--yellow)" data-i18n="leader_tag">⭐ Leader</div>
             </div>
           </div>
         </div>
@@ -574,13 +574,13 @@
           <!-- Lock overlay (shown when locked) -->
           <div class="lock-overlay" id="lockOverlay">
             <div class="lock-icon">🔒</div>
-            <div class="lock-text">支撑位 · 压力位 · 入场建议</div>
-            <div class="lock-sub">付费解锁专业分析，防回撤 · 找入场 · 明方向</div>
-            <button class="btn-green btn-sm" style="margin-top:4px" onclick="tryUnlock()">解锁专业分析 ↓</button>
+            <div class="lock-text" data-i18n="lock_text">Support · Resistance · Entry Advice</div>
+            <div class="lock-sub" data-i18n="lock_sub">Unlock pro analysis — drawdown protection · entry timing · clear direction</div>
+            <button class="btn-green btn-sm" style="margin-top:4px" onclick="tryUnlock()" data-i18n="unlock_pro">Unlock Pro Analysis ↓</button>
           </div>
 
           <!-- Blur preview (always rendered, locked behind overlay) -->
-          <div class="card-title">专业分析</div>
+          <div class="card-title" data-i18n="pro_analysis">Pro Analysis</div>
           <div class="blur-row">
             <span class="blur-label" data-i18n="support_label">📉 Support</span>
             <span class="blur-val" id="blurSupport">$60,000.00</span>
@@ -590,12 +590,12 @@
             <span class="blur-val" id="blurResist">$72,000.00</span>
           </div>
           <div class="blur-row">
-            <span class="blur-label">💡 入场建议</span>
-            <span class="blur-val" style="font-size:12px">做多支撑位附近，目标压力位</span>
+            <span class="blur-label" data-i18n="entry_label">💡 Entry Advice</span>
+            <span class="blur-val" style="font-size:12px" data-i18n="blur_entry">Long near support, target resistance</span>
           </div>
           <div class="blur-row">
-            <span class="blur-label">🌍 大盘体制</span>
-            <span class="blur-val" style="font-size:12px">🟢 牛市体制，多头共振</span>
+            <span class="blur-label" data-i18n="regime_label2">🌍 Market Regime</span>
+            <span class="blur-val" style="font-size:12px" data-i18n="blur_regime">🟢 Bull regime, trend aligned</span>
           </div>
         </div>
 
@@ -900,6 +900,19 @@ const T = {
     // Empty state
     empty_hint: 'Enter any crypto symbol<br>to get LGAI market prediction',
     // Query
+    free_preview: 'Free Preview',
+    live_price: 'Live Price',
+    latest_push: 'Latest Push',
+    push_hist_count: 'Push Count',
+    identity: 'Identity',
+    leader_tag: '⭐ Leader',
+    lock_text: 'Support · Resistance · Entry Advice',
+    lock_sub: 'Unlock pro analysis — drawdown protection · entry timing · clear direction',
+    unlock_pro: 'Unlock Pro Analysis ↓',
+    entry_label: '💡 Entry Advice',
+    regime_label2: '🌍 Market Regime',
+    blur_entry: 'Long near support, target resistance',
+    blur_regime: '🟢 Bull regime, trend aligned',
     search_placeholder: 'Enter symbol: BTC · ETH · SOL · XRP...',
     query_btn: 'Query',
     no_data: 'No data',
@@ -999,6 +1012,19 @@ const T = {
     faucet_link: '💧 领取测试代币',
     explorer_link: '🔍 区块浏览器',
     empty_hint: '输入任意加密货币符号<br>查看猎狗 AI 行情预测',
+    free_preview: '免费预览',
+    live_price: '实时价格',
+    latest_push: '最新推送',
+    push_hist_count: '历史推送',
+    identity: '身份',
+    leader_tag: '⭐ 龙头',
+    lock_text: '支撑位 · 压力位 · 入场建议',
+    lock_sub: '付费解锁专业分析，防回撤 · 找入场 · 明方向',
+    unlock_pro: '解锁专业分析 ↓',
+    entry_label: '💡 入场建议',
+    regime_label2: '🌍 大盘体制',
+    blur_entry: '做多支撑位附近，目标压力位',
+    blur_regime: '🟢 牛市体制，多头共振',
     search_placeholder: '输入币种 BTC · ETH · SOL · XRP...',
     query_btn: '查询',
     no_data: '暂无数据',
@@ -1779,7 +1805,8 @@ function renderFreeCard(tok, d) {
 
   const dir = d.direction;
   const chip = document.getElementById('rDirChip');
-  chip.textContent = (d.direction_emoji || '') + ' ' + (dir || '—');
+  const dirText = lang==='en' ? (dir==='多'?'Bull':dir==='空'?'Bear':dir||'—') : (dir||'—');
+  chip.textContent = (d.direction_emoji || '') + ' ' + dirText;
   chip.className = 'direction-chip ' + (dir==='多'?'bull':dir==='空'?'bear':'neutral');
 
   document.getElementById('rRunTag').textContent = (lang==='en' ? d.run_label_en : d.run_label) || '';
