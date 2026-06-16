@@ -46,7 +46,7 @@ from fastapi.staticfiles import StaticFiles
 
 from analyze import (
     get_token_analysis, get_market_prediction, get_regime,
-    fmt_price, trend_label
+    fmt_price, trend_label, trend_label_en
 )
 from x402 import (
     payment_required_response, verify_payment, settle_payment,
@@ -63,12 +63,18 @@ SUB_DB_PATH = PROJECT_DIR / "data" / "lgai_subscriptions.db"
 # ── 订阅计划 (USDC 6位精度) ───────────────────────────────────────────────────
 # 金额单位: PHRS wei (18位小数), price 字段是展示用字符串
 PLANS = {
-    "per_query": {"wei":   180_000_000_000_000_000, "seconds": 3600,        "label": "按次",   "price": "0.18", "discount": ""},
-    "weekly":    {"wei":  23_000_000_000_000_000_000, "seconds": 7*86400,   "label": "周卡",   "price": "23",   "discount": "无折扣"},
-    "monthly":   {"wei":  93_000_000_000_000_000_000, "seconds": 30*86400,  "label": "月卡",   "price": "93",   "discount": "95折"},
-    "quarterly": {"wei": 260_000_000_000_000_000_000, "seconds": 90*86400,  "label": "季卡",   "price": "260",  "discount": "88折"},
-    "biannual":  {"wei": 508_000_000_000_000_000_000, "seconds": 180*86400, "label": "半年卡", "price": "508",  "discount": "86折"},
-    "annual":    {"wei": 888_000_000_000_000_000_000, "seconds": 365*86400, "label": "年卡",   "price": "888",  "discount": "75折"},
+    "per_query": {"wei":   180_000_000_000_000_000, "seconds": 3600,        "label": "按次",
+        "label_en": "Per Query", "discount_en": "",   "price": "0.18", "discount": ""},
+    "weekly":    {"wei":  23_000_000_000_000_000_000, "seconds": 7*86400,   "label": "周卡",
+        "label_en": "Weekly", "discount_en": "No discount",   "price": "23",   "discount": "无折扣"},
+    "monthly":   {"wei":  93_000_000_000_000_000_000, "seconds": 30*86400,  "label": "月卡",
+        "label_en": "Monthly", "discount_en": "5% off",   "price": "93",   "discount": "95折"},
+    "quarterly": {"wei": 260_000_000_000_000_000_000, "seconds": 90*86400,  "label": "季卡",
+        "label_en": "Quarterly", "discount_en": "12% off",   "price": "260",  "discount": "88折"},
+    "biannual":  {"wei": 508_000_000_000_000_000_000, "seconds": 180*86400, "label": "半年卡",
+        "label_en": "Semi-Annual", "discount_en": "14% off", "price": "508",  "discount": "86折"},
+    "annual":    {"wei": 888_000_000_000_000_000_000, "seconds": 365*86400, "label": "年卡",
+        "label_en": "Annual", "discount_en": "25% off 🔥",   "price": "888",  "discount": "75折"},
 }
 
 # ── 订阅会话 secret (进程级, 重启后旧 token 失效) ──────────────────────────────
@@ -476,6 +482,7 @@ def predict_token_free(token: str):
         "direction_emoji": d["direction_emoji"],
         "run": d["run"],
         "run_label": trend_label(d["run"]),
+        "run_label_en": trend_label_en(d["run"]),
         "latest_price": d["live_price"],
         "latest_push": d["latest_push"],
         "is_leader": d["is_leader"],
@@ -499,6 +506,7 @@ def market_free():
         "direction": m["direction"],
         "direction_emoji": m["direction_emoji"],
         "regime_label": m["regime_label"],
+        "regime_label_en": {1: "🟢 Bull", -1: "🔴 Bear", 0: "⚪ Neutral"}.get(m["regime"], "⚪ Neutral"),
         "message": (
             f"大盘当前体制: {m['direction_emoji']} {m['regime_label']} · "
             f"BTC推送 {'+' if m['btc_run'] > 0 else ''}{m['btc_run']}连"
@@ -553,29 +561,48 @@ async def predict_token_detail(token: str, request: Request):
     run = d["run"]
     market_regime = regime["regime"]
     advice_parts = []
+    advice_parts_en = []
+    entry_advice_en = ''
 
     if run >= 2:
         advice_parts.append(f"✅ 连涨 +{run} 次，多头信号有效")
         if market_regime == 1:
             advice_parts.append("✅ 大盘牛市体制，多头方向共振")
             entry_advice = f"可考虑在支撑位 {fmt_price(d['support'])} 附近做多"
+            advice_parts_en.append(f"✅ Bull streak +{run}, bull signal valid")
+            advice_parts_en.append("✅ Market in bull regime — trend aligned")
+            entry_advice_en = f"Consider long near support {fmt_price(d['support'])}"
         elif market_regime == -1:
             advice_parts.append("⚠️ 大盘熊市体制，逆势做多需谨慎")
             entry_advice = "建议等待大盘体制转正后再介入"
+            advice_parts_en.append(f"✅ Bull streak +{run}, bull signal valid")
+            advice_parts_en.append("⚠️ Market in bear regime — counter-trend long, use caution")
+            entry_advice_en = "Wait for market regime to turn positive before entering"
         else:
             entry_advice = f"支撑位(前次推送) {fmt_price(d['support'])} 做多，目标压力位(最近高点) {fmt_price(d['resistance'])}"
+            advice_parts_en.append(f"✅ Bull streak +{run}, bull signal valid")
+            entry_advice_en = f"Support (prev push) {fmt_price(d['support'])} long target resistance {fmt_price(d['resistance'])}"
     elif run <= -2:
         advice_parts.append(f"✅ 连跌 {run} 次，空头信号有效")
         if market_regime == 1:
             advice_parts.append("⚠️ 大盘牛市体制，做空风险较高")
             entry_advice = "牛市体制不建议做空，等待反弹后顺势做多"
+            advice_parts_en.append(f"✅ Bear streak {run}, bear signal valid")
+            advice_parts_en.append("⚠️ Market in bull regime — shorting is high risk")
+            entry_advice_en = "Bull regime — avoid shorts, wait for bounce to go long"
         elif market_regime == -1:
             advice_parts.append("✅ 大盘熊市体制，空头方向共振")
             entry_advice = f"可考虑在压力位(最近高点) {fmt_price(d['resistance'])} 附近做空，支撑位(前次推送) {fmt_price(d['support'])} 止损参考"
+            advice_parts_en.append(f"✅ Bear streak {run}, bear signal valid")
+            advice_parts_en.append("✅ Market in bear regime — trend aligned")
+            entry_advice_en = f"Consider short near resistance {fmt_price(d['resistance'])}, stop ref support {fmt_price(d['support'])}"
         else:
             entry_advice = f"压力位 {fmt_price(d['resistance'])} 做空，止损参考支撑位 {fmt_price(d['support'])}"
+            advice_parts_en.append(f"✅ Bear streak {run}, bear signal valid")
+            entry_advice_en = f"Resistance {fmt_price(d['resistance'])} short, stop ref support {fmt_price(d['support'])}"
     else:
         entry_advice = "信号不足（连推 <2次），建议观望等待趋势确认"
+        entry_advice_en = "Signal weak (<2 streaks) — wait for trend confirmation"
 
     # 支撑压力区间
     if d["support"] and d["resistance"] and d["support"] > 0:
@@ -609,6 +636,7 @@ async def predict_token_detail(token: str, request: Request):
         "direction_emoji": d["direction_emoji"],
         "run": run,
         "run_label": trend_label(run),
+        "run_label_en": trend_label_en(run),
         "push_count": d["push_count"],
 
         # 大盘背景
@@ -617,7 +645,9 @@ async def predict_token_detail(token: str, request: Request):
 
         # 建议 (仅供参考)
         "signals": advice_parts,
+        "signals_en": advice_parts_en,
         "entry_advice": entry_advice,
+        "entry_advice_en": entry_advice_en,
         "disclaimer": "以上分析基于推送数据统计，仅供参考，不构成投资建议。",
 
         # 近期推送 (最新5条)
@@ -691,8 +721,10 @@ async def market_detail(request: Request):
     eth_run = m["eth_run"]
     if btc_run >= 2:
         interpretations.append(f"🐂 BTC 连涨 +{btc_run} 次，短期多头动能强")
+        interpretations_en.append(f"🐂 BTC bull streak +{btc_run}, short-term bullish momentum")
     elif btc_run <= -2:
         interpretations.append(f"🐻 BTC 连跌 {btc_run} 次，短期空头压力大")
+        interpretations_en.append(f"🐻 BTC bear streak {btc_run}, short-term bearish pressure")
 
     # ── 推送密度信号 (回测结论) ──────────────────────────────────────────────
     density = m.get("push_density") or {}
@@ -701,14 +733,18 @@ async def market_detail(request: Request):
 
     if density.get("signal"):
         interpretations.append(f"📶 推送密度 MA7={density.get('ma7','?')}次/天 · {density['signal']}")
+        interpretations_en.append(f"📶 Push density MA7={density.get('ma7','?')}/day · {density.get('signal_en') or density['signal']}")
 
     if back.get("back_7d_note"):
         interpretations.append(f"🔔 {back['back_7d_note']}")
+        interpretations_en.append(f"🔔 {back.get('back_7d_note_en') or back['back_7d_note']}")
     if back.get("back_30d_note"):
         interpretations.append(f"📅 {back['back_30d_note']}")
+        interpretations_en.append(f"📅 {back.get('back_30d_note_en') or back['back_30d_note']}")
 
     if joint:
         interpretations.append("⚡ 联合信号触发: 回调信号 + 推送低密度 → 历史7日胜率61%")
+        interpretations_en.append("⚡ Joint signal: pullback + low push density → 61% 7d win rate (historical)")
 
     # 综合建议 (加入密度权重)
     density_q = density.get("quintile", "")
@@ -717,21 +753,29 @@ async def market_detail(request: Request):
 
     if joint:
         overall = "⚡ 强买点共振 — 回调信号 + 低密度蓄力，历史最强组合，胜率61%"
+        overall_en = "⚡ Strong buy confluence — pullback + low density buildup, best historical combo, 61% win rate"
     elif regime == 1 and (m["btc_state"] == 1 or btc_run >= 2):
         if density_q in ("Q1低密度", "Q2") or density_accel <= -10:
             overall = "🟢 多头共振 + 密度低位 — 三重共振，高置信做多龙头"
+            overall_en = "🟢 Bull confluence + low density — triple confluence, high-confidence long on leaders"
         else:
             overall = "🟢 多头共振 — 推土机多头 + BTC走强，适合做多龙头币"
+            overall_en = "🟢 Bull confluence — trend bull + BTC strengthening, suitable to long leaders"
     elif regime == -1 and (m["btc_state"] == -1 or btc_run <= -2):
         overall = "🔴 空头共振 — 推土机熊市 + BTC走弱，谨慎做多，山寨避险"
+        overall_en = "🔴 Bear confluence — trend bear + BTC weakening, avoid longs, reduce altcoin exposure"
     elif density_q == "Q4偏高" and back_7d <= 1:
         overall = "🟡 密度偏高分化期 — 历史7日收益-1%，轻仓观望等低密度或急剧减速"
+        overall_en = "🟡 High density divergence — historical 7d return -1%, light position, wait for density drop"
     elif regime == 1:
         overall = "🟡 牛市体制但信号分化 — 以龙头多头机会为主，控制仓位"
+        overall_en = "🟡 Bull regime but signals diverging — focus on leader longs, manage position size"
     elif regime == -1:
         overall = "🟡 熊市体制但信号分化 — 减少多头暴露，等待趋势明朗"
+        overall_en = "🟡 Bear regime but signals diverging — reduce long exposure, wait for clarity"
     else:
         overall = "⚪ 震荡格局 — 方向不明，轻仓或观望为宜"
+        overall_en = "⚪ Range-bound — direction unclear, light position or stand aside"
 
     result = {
         "direction": m["direction"],
@@ -746,14 +790,18 @@ async def market_detail(request: Request):
         # BTC/ETH 状态
         "btc_state": m["btc_state"],
         "btc_state_label": {1: "🟢 推土机多头", -1: "🔴 推土机空头", 0: "⚪ 中性"}.get(m["btc_state"] or 0, "—"),
+        "btc_state_label_en": {1: "🟢 Bull Trend", -1: "🔴 Bear Trend", 0: "⚪ Neutral"}.get(m["btc_state"] or 0, "—"),
         "eth_state": m["eth_state"],
         "eth_state_label": {1: "🟢 推土机多头", -1: "🔴 推土机空头", 0: "⚪ 中性"}.get(m["eth_state"] or 0, "—"),
+        "eth_state_label_en": {1: "🟢 Bull Trend", -1: "🔴 Bear Trend", 0: "⚪ Neutral"}.get(m["eth_state"] or 0, "—"),
 
         # 推送连推
         "btc_run": btc_run,
         "btc_run_label": trend_label(btc_run),
+        "btc_run_label_en": trend_label_en(btc_run),
         "eth_run": eth_run,
         "eth_run_label": trend_label(eth_run),
+        "eth_run_label_en": trend_label_en(eth_run),
 
         # 密度指标
         "push_density_ma7": density.get("ma7"),
@@ -765,8 +813,11 @@ async def market_detail(request: Request):
 
         # 解读 & 建议
         "interpretations": interpretations,
+        "interpretations_en": interpretations_en,
         "overall": overall,
+        "overall_en": overall_en,
         "disclaimer": "以上分析基于推土机体制 + 猎狗推送数据，仅供参考，不构成投资建议。",
+        "disclaimer_en": "Analysis based on trend regime + LGAI signal data. For reference only, not investment advice.",
 
         "updated_at": m["updated_at"],
     }

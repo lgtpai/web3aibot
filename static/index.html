@@ -1071,6 +1071,8 @@ function applyLang() {
   });
   // Refresh sub badge if active
   refreshSubBadge();
+  // Re-render plan grid with correct language
+  if (typeof renderPlanGrid === 'function') renderPlanGrid();
 }
 
 function setLang(l) {
@@ -1117,12 +1119,12 @@ async function loadMarket() {
     const r = await fetch('/market');
     const d = await r.json();
     const pill = document.getElementById('regimePill');
-    pill.textContent = t('market_prefix') + (d.regime_label || d.direction || '—');
+    pill.textContent = t('market_prefix') + ((lang==='en' ? d.regime_label_en : d.regime_label) || d.direction || '—');
     const cls = d.direction === '多' ? 'bull' : d.direction === '空' ? 'bear' : 'neutral'; // direction from API
     pill.className = 'regime-pill ' + cls;
 
     // Market overview card
-    document.getElementById('mkRegime').textContent = d.regime_label || '—';
+    document.getElementById('mkRegime').textContent = (lang==='en' ? d.regime_label_en : d.regime_label) || '—';
     document.getElementById('mkRegime').className = 'mkt-value ' + (d.direction==='多'?'up':d.direction==='空'?'dn':'');
   } catch(e) {}
 }
@@ -1324,7 +1326,7 @@ function renderPlanGrid() {
     div.onclick = () => selectPlan(k);
     const disc = PLAN_DISCOUNTS[k];
     div.innerHTML = `
-      <div class="plan-name">${p.label}</div>
+      <div class="plan-name">${lang==="en" && p.label_en ? p.label_en : p.label}</div>
       <div class="plan-price">${p.price} PHRS</div>
       <div class="plan-period">${PLAN_PERIODS[k]||''}</div>
       ${disc ? `<div class="plan-value">${disc}</div>` : '<div class="plan-value" style="visibility:hidden">—</div>'}
@@ -1780,7 +1782,7 @@ function renderFreeCard(tok, d) {
   chip.textContent = (d.direction_emoji || '') + ' ' + (dir || '—');
   chip.className = 'direction-chip ' + (dir==='多'?'bull':dir==='空'?'bear':'neutral');
 
-  document.getElementById('rRunTag').textContent = d.run_label || '';
+  document.getElementById('rRunTag').textContent = (lang==='en' ? d.run_label_en : d.run_label) || '';
   document.getElementById('rLivePrice').textContent = fmtNum(d.latest_price);
   document.getElementById('rPushPrice').textContent = fmtNum(d.latest_push);
   document.getElementById('rPushTime').textContent = '';
@@ -1855,17 +1857,17 @@ function renderPaidCard(d) {
   document.getElementById('pdResist').textContent = d.resistance_fmt || '—';
   document.getElementById('pdResistTime').textContent = d.resistance_time ? '推送时间: ' + d.resistance_time.slice(0,10) : '';
   document.getElementById('pdRange').textContent = d.range_pct || '—';
-  document.getElementById('pdRegime').textContent = d.market_regime_label || '—';
+  document.getElementById('pdRegime').textContent = (lang==='en' ? d.market_regime_label_en : d.market_regime_label) || '—';
 
   const sigList = document.getElementById('pdSignals');
   sigList.innerHTML = '';
-  (d.signals || []).forEach(s => {
+  ((lang==='en' ? d.signals_en : null) || d.signals || []).forEach(s => {
     const li = document.createElement('li');
     li.textContent = s;
     sigList.appendChild(li);
   });
 
-  document.getElementById('pdAdvice').textContent = '💡 ' + (d.entry_advice || '—');
+  document.getElementById('pdAdvice').textContent = '💡 ' + ((lang==='en' ? d.entry_advice_en : null) || d.entry_advice || '—');
   document.getElementById('pdDisclaimer').textContent = d.disclaimer || '';
 
   // Recent pushes (去重后渲染)
@@ -1978,7 +1980,8 @@ function updatePayBtn() {
     const total = (parseFloat(p.price) * state.perQueryQty).toFixed(4).replace(/\.?0+$/, '');
     btn.textContent = `${t('pay')} ${total} PHRS · ${state.perQueryQty}${t('times_unit')}`;
   } else {
-    btn.textContent = `${t('pay')} ${p.price} PHRS · ${t('unlock')} ${p.label}`;
+    const lbl = (lang==='en' && p.label_en) ? p.label_en : p.label;
+    btn.textContent = `${t('pay')} ${p.price} PHRS · ${t('unlock')} ${lbl}`;
   }
 }
 </script>
