@@ -1369,9 +1369,9 @@ function updatePayTotal() {
   el.style.display = 'block';
   if (state.selectedPlan === 'per_query' && state.perQueryQty > 1) {
     const total = (parseFloat(p.price) * state.perQueryQty).toFixed(4).replace(/\.?0+$/, '');
-    document.getElementById('payAmountLabel').textContent = `${total} PHRS · ${p.label} × ${state.perQueryQty}${t('times_unit')}`;
+    document.getElementById('payAmountLabel').textContent = `${total} PHRS · ${(lang==='en' && p.label_en ? p.label_en : p.label)} × ${state.perQueryQty}${t('times_unit')}`;
   } else {
-    document.getElementById('payAmountLabel').textContent = `${p.price} PHRS · ${p.label}`;
+    document.getElementById('payAmountLabel').textContent = `${p.price} PHRS · ${(lang==='en' && p.label_en ? p.label_en : p.label)}`;
   }
 }
 
@@ -1496,11 +1496,11 @@ function updateWalletUI() {
         `${t('plan_perquery')} · ${t('remaining')} ${state.remainingQueries} ${t('times_unit')}${tokenHint}`;
     } else {
       const p = state.plans[state.subPlan] || {};
-      subBadge.textContent = (p.label || state.subPlan) + ' VIP';
+      subBadge.textContent = ((lang==='en' && p?.label_en) ? p.label_en : (p?.label || state.subPlan)) + ' VIP';
       const exp = new Date(state.subExpiresAt * 1000);
       const tokenHint = canCallApi ? '' : ' · ' + t('hint_buy_device');
       document.getElementById('subInfoText').textContent =
-        `${p.label || state.subPlan} · ${t('expires')} ${fmtDate(exp)}${tokenHint}`;
+        `${(lang==='en' && p?.label_en) ? p.label_en : (p?.label || state.subPlan)} · ${t('expires')} ${fmtDate(exp)}${tokenHint}`;
     }
 
   } else if (w) {
