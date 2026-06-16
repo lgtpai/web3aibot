@@ -284,6 +284,13 @@ _PUSH_Q_SIGNAL = {
     "Q4偏高":   ("🔴", "中高密度，历史7日-1.0%，谨慎"),
     "Q5极高":   ("🟢", "极高密度动能期，历史7日+1.5%"),
 }
+_PUSH_Q_SIGNAL_EN = {
+    "Q1低密度": "Low density buildup, hist. 7d +2.5%",
+    "Q2":       "Below-avg density, hist. 7d +1.9%",
+    "Q3中等":   "Mid density diverging, hist. 7d flat",
+    "Q4偏高":   "Above-avg density, hist. 7d -1.0%, caution",
+    "Q5极高":   "High density momentum, hist. 7d +1.5%",
+}
 
 def get_push_density_signal() -> dict:
     """当前推送密度信号."""
@@ -297,10 +304,10 @@ def get_push_density_signal() -> dict:
         ).fetchall()
         con.close()
     except Exception:
-        return {"ma7": None, "quintile": None, "signal": "数据不可用", "accel": None}
+        return {"ma7": None, "quintile": None, "signal": "数据不可用", "signal_en": "Data unavailable", "accel": None}
 
     if not rows:
-        return {"ma7": None, "quintile": None, "signal": "数据不足", "accel": None}
+        return {"ma7": None, "quintile": None, "signal": "数据不足", "signal_en": "Insufficient data", "accel": None}
 
     daily = {r[0]: r[1] for r in rows}
     vals = list(daily.values())
@@ -316,17 +323,23 @@ def get_push_density_signal() -> dict:
             break
 
     emoji, desc = _PUSH_Q_SIGNAL[q_label]
+    desc_en = _PUSH_Q_SIGNAL_EN[q_label]
 
     # 加速度叠加
     accel_note = ""
+    accel_note_en = ""
     if accel <= -10:
         accel_note = " ⚡急剧减速，历史最强买点(7日+5.25%)"
+        accel_note_en = " ⚡Sharp decel, strongest buy signal (7d +5.25%)"
     elif accel >= 10:
         accel_note = " 🚀急剧加速，历史7日+1.85%"
+        accel_note_en = " 🚀Sharp accel, hist. 7d +1.85%"
     elif accel <= -3:
         accel_note = " ↘减速中"
+        accel_note_en = " ↘Decelerating"
     elif accel >= 3:
         accel_note = " ↗加速中"
+        accel_note_en = " ↗Accelerating"
 
     return {
         "ma7": ma7,
@@ -334,6 +347,7 @@ def get_push_density_signal() -> dict:
         "accel": accel,
         "emoji": emoji,
         "signal": f"{emoji} {desc}{accel_note}",
+        "signal_en": f"{emoji} {desc_en}{accel_note_en}",
         "today_pushes": vals[0] if vals else None,
     }
 
@@ -363,23 +377,31 @@ def get_back_density_signal() -> dict:
     # 7日信号解读
     if rows_7 >= 3:
         b7_note = f"🟢 7日{rows_7}次回调，密集期历史胜率59%"
+        b7_note_en = f"🟢 {rows_7} pullbacks in 7d — dense period, hist. win rate 59%"
     elif rows_7 == 0:
         b7_note = "⚪ 7日无回调信号"
+        b7_note_en = "⚪ No pullback signals in 7d"
     else:
         b7_note = f"🟡 7日{rows_7}次回调，密度一般"
+        b7_note_en = f"🟡 {rows_7} pullback(s) in 7d — average density"
 
     # 月度解读
     if rows_30 <= 3:
         m_note = "🟢 本月稀疏(≤3次)，历史最强月份"
+        m_note_en = "🟢 Sparse month (≤3), historically strongest period"
     elif rows_30 <= 8:
         m_note = "🔴 本月中等(4-8次)，历史最弱月份，谨慎"
+        m_note_en = "🔴 Mid-density month (4-8), historically weakest — caution"
     else:
         m_note = f"🟡 本月密集({rows_30}次)，历史胜率57%"
+        m_note_en = f"🟡 Dense month ({rows_30}), hist. win rate 57%"
 
     return {
         "back_7d": rows_7,
         "back_30d": rows_30,
         "back_7d_note": b7_note,
+        "back_7d_note_en": b7_note_en,
+        "back_30d_note_en": m_note_en,
         "back_30d_note": m_note,
     }
 
