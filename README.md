@@ -1,112 +1,202 @@
-# 猎狗AI Pharos Skill 🐕
+# LGAI Pharos Skill — Market Prediction + x402 Payment
 
-> Web3 AI 行情预测技能 —— 基于 Pharos 测试网 x402 微支付，提供加密货币多空方向、支撑压力位、大盘体制分析。
+A market prediction skill on the [Pharos](https://docs.pharos.xyz) blockchain. Free queries return bull/bear direction; x402 micropayments unlock detailed analysis with support/resistance levels.
 
-[![Claude Code Skill](https://img.shields.io/badge/Claude%20Code-Skill-yellow)](https://code.claude.com)
-[![Pharos Testnet](https://img.shields.io/badge/Pharos-Testnet-blue)](https://pharos.network)
+## Architecture
 
-## 功能
+```
+Free                              Paid (PHRS native token / x402)
+─────────────────────             ──────────────────────────────────────
+GET /predict/{token}       →      GET /predict/{token}/detail
+  Direction · Latest price          Support · Resistance · Trend · Entry
 
-| 功能 | 是否免费 |
-|------|---------|
-| 币种多空方向 / 推送价格 | ✅ 免费 |
-| 大盘体制 (牛/熊/震荡) | ✅ 免费 |
-| 支撑位 / 压力位 / 入场建议 | 💰 按次付费 (PHRS) |
-| 大盘详细分析 / 市场宽度 | 💰 按次付费 (PHRS) |
-
-支付使用 Pharos 测试网原生代币 PHRS，通过 [x402 协议](https://x402.org) 完成链上微支付。
-
-## 在线体验
-
-访问 Web 界面：连接 MetaMask → 选套餐 → 支付 → 解锁分析
-
-需要 Pharos 测试网（Chain ID: 688689），可在水龙头领取测试 PHRS：
-https://faucet.pharos.network
-
-## Claude Code 安装
-
-```bash
-claude mcp add https://raw.githubusercontent.com/lgtpai/web3aibot/main/well-known/mcp.json
+GET /market                →      GET /market/detail
+  Market regime                     Breadth / BTC / ETH / altcoin state
 ```
 
-或直接克隆后本地安装：
+## Data Sources
+
+| Data | Source |
+|------|--------|
+| Support level | `data/lgai.db` — lowest push price in recent signals |
+| Resistance level | `data/lgai.db` — highest push price in recent signals |
+| Direction (bull/bear) | Consecutive push direction: up/down vs previous |
+| Market regime | `data/regime_monitor/state.json` (regime field) |
+| Leader list | `data/leaders_config.json` |
+
+## Pharos Testnet Config
+
+| Parameter | Value |
+|-----------|-------|
+| Chain ID | 688689 (Pharos Atlantic) |
+| Native token | PHRS |
+| Explorer | https://pharosscan.xyz |
+| Faucet | https://faucet.pharos.xyz |
+
+## Quick Start
+
+### 1. Install Dependencies
 
 ```bash
-git clone https://github.com/lgtpai/web3aibot.git
-cd web3aibot
-pip install -r requirements.txt
+cd crypto_quant
+.venv/bin/pip install httpx --break-system-packages
 ```
 
-## 自部署
-
-### 1. 环境配置
+### 2. Dev Mode (no real payment)
 
 ```bash
-cp .env.example .env
-# 编辑 .env，填写以下必填项：
-# LGAI_RECIPIENT_ADDRESS=0xYOUR_WALLET   # 收款钱包地址
-# LGAI_SECRET=your_random_secret         # 用于生成 session token
+cd skills/lgai_pharos
+LGAI_DEV_MODE=true .venv/bin/python -m uvicorn server:app --port 8402
 ```
 
-### 2. 实现数据层
+Visit http://localhost:8402 for the web UI, or http://localhost:8402/docs for Swagger.
 
-`analyze.py` 是数据接口层，当前为 stub（返回空数据）。
-你需要替换为连接你自己数据源的实现：
-
-```python
-# analyze.py
-def get_token_analysis(token: str) -> dict:
-    # 返回代币分析结果
-    # 必须字段见 analyze.py 中的文档注释
-    ...
-```
-
-### 3. 启动服务
+### 3. Production (real x402 payment)
 
 ```bash
-# 开发模式
-uvicorn server:app --host 0.0.0.0 --port 8402
+# Set your Pharos wallet address in the plist
+nano com.lgai.skill.plist   # edit LGAI_RECIPIENT_ADDRESS
 
-# macOS 后台服务（launchd）
+# Install launchd autostart
 cp com.lgai.skill.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.lgai.skill.plist
 ```
 
-### 4. 访问 Web 界面
+### 4. Test Endpoints
 
-打开 http://localhost:8402
+```bash
+# Free: BTC direction
+curl http://localhost:8402/predict/BTC
+
+# Free: market regime
+curl http://localhost:8402/market
+
+# Paid: returns 402 + payment info
+curl http://localhost:8402/predict/BTC/detail
+
+# Discovery
+curl http://localhost:8402/.well-known/x402
+curl http://localhost:8402/.well-known/mcp.json
+
+# Dev mode paid test (X-PAYMENT any value passes)
+curl -H "X-PAYMENT: dGVzdA==" http://localhost:8402/predict/BTC/detail
+```
+
+## x402 Payment Flow
+
+```
+Client                          LGAI Skill Server           Pharos Facilitator
+  │                                   │                             │
+  │── GET /predict/BTC/detail ───────→│                             │
+  │                                   │── no X-PAYMENT ──→ 402     │
+  │←── 402 + payment_requirements ───│                             │
+  │                                   │                             │
+  │── on-chain PHRS transfer ─────────────────────────────→ broadcast
+  │                                   │                             │
+  │── GET /predict/BTC/detail ───────→│                             │
+  │   X-PAYMENT: base64(proof_json)   │                             │
+  │                                   │── POST /verify ────────────→│
+  │                                   │←── {isValid: true} ─────────│
+  │←── 200 + detailed analysis JSON ─│                             │
+  │                                   │── POST /settle ────────────→│
+```
+
+## Response Examples
+
+### Free `/predict/BTC`
+```json
+{
+  "token": "BTC",
+  "direction": "多",
+  "direction_emoji": "🟢",
+  "run": 3,
+  "run_label": "Strong Bull +3",
+  "latest_price": 68420.5,
+  "is_leader": true,
+  "message": "BTC direction: 🟢 Bull (Strong +3) · Latest $68,420.50"
+}
+```
+
+### Paid `/predict/BTC/detail`
+```json
+{
+  "token": "BTC",
+  "support": 65200.0,
+  "support_fmt": "$65,200.00",
+  "resistance": 71500.0,
+  "resistance_fmt": "$71,500.00",
+  "range_pct": "Range 9.66%",
+  "direction": "多",
+  "run": 3,
+  "market_regime": 1,
+  "market_regime_label": "🟢 Bull",
+  "signals": ["✅ +3 consecutive bull signals", "✅ Market in bull regime"],
+  "entry_advice": "Consider long near support $65,200.00",
+  "recent_pushes": [...]
+}
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LGAI_RECIPIENT_ADDRESS` | (required) | Your Pharos wallet address to receive payments |
+| `PHAROS_CHAIN_ID` | 688689 | Pharos Atlantic testnet |
+| `LGAI_SKILL_BASE_URL` | http://localhost:8402 | Public URL of the skill |
+| `LGAI_DEV_MODE` | false | `true` = skip payment verification (dev only) |
+
+---
+
+# 猎狗AI Pharos 技能 — 行情预测 + x402 支付
+
+基于 [Pharos](https://docs.pharos.xyz) 公链的行情预测技能，支持免费查询多空方向，x402 微支付解锁详细分析。
+
+## 架构
+
+```
+免费                          付费 (PHRS 原生代币 / x402)
+─────────────────────         ──────────────────────────────────────
+GET /predict/{token}    →     GET /predict/{token}/detail
+  多空方向 · 最新价             支撑位 · 压力位 · 趋势强度 · 入场建议
+
+GET /market             →     GET /market/detail
+  大盘体制方向                  宽度/BTC/ETH状态/山寨体制/综合建议
+```
+
+## 快速启动
+
+```bash
+# 安装依赖
+cd crypto_quant && .venv/bin/pip install httpx --break-system-packages
+
+# 开发模式 (无需真实支付)
+cd skills/lgai_pharos
+LGAI_DEV_MODE=true .venv/bin/python -m uvicorn server:app --port 8402
+```
+
+访问 http://localhost:8402 查看面板（默认英文，右上角切换中文）。
+
+## Pharos 测试网
+
+| 参数 | 值 |
+|------|----|
+| Chain ID | 688689 (Pharos Atlantic) |
+| 原生代币 | PHRS |
+| 浏览器 | https://pharosscan.xyz |
+| 水龙头 | https://faucet.pharos.xyz |
 
 ## 订阅套餐
 
 | 套餐 | 价格 | 有效期 |
 |------|------|--------|
-| 按次解锁 | 0.18 PHRS | 每次独立，90天内有效 |
-| 周卡 | 0.68 PHRS | 7天 |
-| 月卡 | 1.18 PHRS | 30天 |
-| 季卡 | 2.88 PHRS | 90天 |
-| 半年卡 | 4.98 PHRS | 180天 |
-| 年卡 | 8.88 PHRS | 365天 |
+| 按次解锁 | 0.18 PHRS/次 | 90天 |
+| 周卡 | 0.50 PHRS | 7天 |
+| 月卡 | 1.80 PHRS | 30天 |
+| 季卡 | 4.00 PHRS | 90天 |
 
-## 技术架构
+## 环境变量
 
-```
-用户浏览器
-  └─ static/index.html (MetaMask + PHRS 支付)
-       └─ FastAPI server (port 8402)
-            ├─ /predict/{token}        免费接口
-            ├─ /predict/{token}/detail 付费接口 (x402)
-            ├─ /market                 免费接口
-            ├─ /market/detail          付费接口 (x402)
-            ├─ /api/subscribe          订阅注册
-            ├─ /api/subscription/{w}   订阅查询
-            ├─ /api/history/{w}        消费记录
-            └─ /api/tokens             联想候选
-```
-
-## 许可
-
-MIT License — 欢迎 fork 后接入你自己的数据源。
-
----
-
-**猎狗AI** · [GitHub](https://github.com/lgtpai) · Pharos Testnet
+| 变量 | 说明 |
+|------|------|
+| `LGAI_RECIPIENT_ADDRESS` | **必填** 收款钱包地址 |
+| `LGAI_DEV_MODE` | `true` = 跳过支付验证（仅开发用） |
