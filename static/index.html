@@ -509,11 +509,11 @@
   <!-- Search -->
   <div class="search-bar">
     <div class="search-wrap">
-      <input type="text" id="tokenInput" placeholder="输入币种 BTC · ETH · SOL · XRP..." maxlength="20"
+      <input type="text" id="tokenInput" placeholder="Enter symbol: BTC · ETH · SOL · XRP..." data-i18n-placeholder="search_placeholder" maxlength="20"
              autocomplete="off" oninput="acInput()" onkeydown="acKeydown(event)"/>
       <div class="ac-dropdown" id="acDropdown" style="display:none"></div>
     </div>
-    <button class="btn-primary" id="queryBtn" onclick="queryToken()">查询</button>
+    <button class="btn-primary" id="queryBtn" onclick="queryToken()" data-i18n="query_btn">Query</button>
   </div>
 
   <!-- Grid: results + right panel -->
@@ -900,6 +900,7 @@ const T = {
     // Empty state
     empty_hint: 'Enter any crypto symbol<br>to get LGAI market prediction',
     // Query
+    search_placeholder: 'Enter symbol: BTC · ETH · SOL · XRP...',
     query_btn: 'Query',
     no_data: 'No data',
     // Errors / toasts
@@ -998,6 +999,7 @@ const T = {
     faucet_link: '💧 领取测试代币',
     explorer_link: '🔍 区块浏览器',
     empty_hint: '输入任意加密货币符号<br>查看猎狗 AI 行情预测',
+    search_placeholder: '输入币种 BTC · ETH · SOL · XRP...',
     query_btn: '查询',
     no_data: '暂无数据',
     err_no_metamask: '请先安装 MetaMask 钱包插件',
@@ -1056,9 +1058,16 @@ function applyLang() {
   // wallet btn
   const wb = document.getElementById('walletBtn');
   if (wb && !wb.dataset.connected) wb.textContent = t('connect_wallet');
-  // Query buttons
-  document.querySelectorAll('.query-btn').forEach(b => {
-    if (!b.dataset.querying) b.textContent = t('query_btn');
+  // Query button (by id)
+  const qb = document.getElementById('queryBtn');
+  if (qb && !qb.dataset.querying) qb.textContent = t('query_btn');
+  // Search input placeholder
+  const ti = document.getElementById('tokenInput');
+  if (ti) ti.placeholder = t('search_placeholder');
+  // data-i18n-placeholder elements
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (T[lang]?.[key]) el.placeholder = T[lang][key];
   });
   // Refresh sub badge if active
   refreshSubBadge();
@@ -1235,10 +1244,10 @@ async function loadHistory() {
     tbody.innerHTML = '';
     d.records.forEach(rec => {
       const statusClass = {
-        t('status_used')  : 'status-used',
-        t('status_pending'): 'status-pending',
-        t('status_active') : 'status-active',
-        t('status_expired'): 'status-expired',
+        '已使用': 'status-used', 'Used': 'status-used',
+        '待使用': 'status-pending', 'Pending': 'status-pending',
+        '有效':   'status-active',  'Active': 'status-active',
+        '已过期': 'status-expired', 'Expired': 'status-expired',
       }[rec.status] || '';
 
       const txCell = rec.tx_hash
