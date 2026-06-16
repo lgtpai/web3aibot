@@ -1099,6 +1099,8 @@ function applyLang() {
   refreshSubBadge();
   // Re-render plan grid with correct language
   if (typeof renderPlanGrid === 'function') renderPlanGrid();
+  // Re-render history table with correct language
+  if (typeof loadHistory === 'function') loadHistory();
 }
 
 function setLang(l) {
@@ -1895,7 +1897,7 @@ function renderPaidCard(d) {
   });
 
   document.getElementById('pdAdvice').textContent = '💡 ' + ((lang==='en' ? d.entry_advice_en : null) || d.entry_advice || '—');
-  document.getElementById('pdDisclaimer').textContent = d.disclaimer || '';
+  document.getElementById('pdDisclaimer').textContent = (lang==='en' ? d.disclaimer_en : d.disclaimer) || '';
 
   // Recent pushes (去重后渲染)
   const tbody = document.getElementById('pdPushes');

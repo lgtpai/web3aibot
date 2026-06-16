@@ -660,6 +660,7 @@ async def predict_token_detail(token: str, request: Request):
         "entry_advice": entry_advice,
         "entry_advice_en": entry_advice_en,
         "disclaimer": "以上分析基于推送数据统计，仅供参考，不构成投资建议。",
+        "disclaimer_en": "Analysis based on signal push data. For reference only, not investment advice.",
 
         # 近期推送 (最新5条)
         "recent_pushes": d["pushes"][:5],
