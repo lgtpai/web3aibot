@@ -238,6 +238,7 @@ def api_history(wallet: str, limit: int = 50):
                 "id": row_id,
                 "plan": plan,
                 "plan_label": plan_info.get("label", plan),
+                "plan_label_en": plan_info.get("label_en", plan),
                 "price": plan_info.get("price", "?"),
                 "created_at": created_at,
                 "created_readable": time.strftime("%Y-%m-%d %H:%M", time.localtime(created_at)),
@@ -251,6 +252,12 @@ def api_history(wallet: str, limit: int = 50):
                     else "待使用" if plan == "per_query" and used == 0
                     else "已过期" if expires_at < int(time.time())
                     else "有效"
+                ),
+                "status_en": (
+                    "Used" if plan == "per_query" and used == 1
+                    else "Pending" if plan == "per_query" and used == 0
+                    else "Expired" if expires_at < int(time.time())
+                    else "Active"
                 ),
             })
         return JSONResponse({"ok": True, "records": records})
@@ -608,8 +615,10 @@ async def predict_token_detail(token: str, request: Request):
     if d["support"] and d["resistance"] and d["support"] > 0:
         range_pct = round((d["resistance"] / d["support"] - 1) * 100, 2)
         range_str = f"区间幅度 {range_pct}%"
+        range_str_en = f"Range {range_pct}%"
     else:
         range_str = ""
+        range_str_en = ""
 
     result = {
         "token": tok,
@@ -627,9 +636,11 @@ async def predict_token_detail(token: str, request: Request):
         "support_fmt": fmt_price(d["support"]),
         "support_time": d.get("support_time"),
         "resistance": d["resistance"],
-        "resistance_fmt": fmt_price(d["resistance"]) if d["resistance"] else "—(当前处于历史推送高位)",
+        "resistance_fmt": fmt_price(d["resistance"]) if d["resistance"] else "—",
+        "resistance_fmt_en": fmt_price(d["resistance"]) if d["resistance"] else "—(at historical high)",
         "resistance_time": d.get("resistance_time"),
         "range_pct": range_str,
+        "range_pct_en": range_str_en,
 
         # 趋势
         "direction": d["direction"],
@@ -687,35 +698,45 @@ async def market_detail(request: Request):
     # 综合解读
     regime = m["regime"]
     interpretations = []
+    interpretations_en = []
 
     if m["breadth"] is not None:
         b = m["breadth"]
-        # breadth 在 [-0.5, 0.5] 区间: 0=五五开, >0=多头占优, <0=空头占优
         if b >= 0.2:
             interpretations.append(f"📊 市场宽度 {b:+.1%} — 多数币种走强，趋势健康")
+            interpretations_en.append(f"📊 Market breadth {b:+.1%} — most coins rising, healthy trend")
         elif b <= -0.2:
             interpretations.append(f"📊 市场宽度 {b:+.1%} — 空头占优，谨慎追多")
+            interpretations_en.append(f"📊 Market breadth {b:+.1%} — bears dominant, avoid chasing longs")
         else:
             interpretations.append(f"📊 市场宽度 {b:+.1%} — 多空分化，关注龙头方向")
+            interpretations_en.append(f"📊 Market breadth {b:+.1%} — diverging, follow leader direction")
 
     if m["btc_state"] == 1:
         interpretations.append("₿ BTC 推土机多头，主流多头确认")
+        interpretations_en.append("₿ BTC bull trend, major coins confirmed bullish")
     elif m["btc_state"] == -1:
         interpretations.append("₿ BTC 推土机空头，市场承压")
+        interpretations_en.append("₿ BTC bear trend, market under pressure")
 
     if m["eth_state"] == 1:
         interpretations.append("Ξ ETH 推土机多头，山寨联动向好")
+        interpretations_en.append("Ξ ETH bull trend, altcoins likely to follow")
     elif m["eth_state"] == -1:
         interpretations.append("Ξ ETH 推土机空头，山寨承压")
+        interpretations_en.append("Ξ ETH bear trend, altcoins under pressure")
 
     if m["alt_breadth"] is not None:
         ab = m["alt_breadth"]
         if ab >= 0.2:
             interpretations.append(f"🪙 山寨宽度 {ab:+.1%} — 山寨行情活跃，联动向好")
+            interpretations_en.append(f"🪙 Alt breadth {ab:+.1%} — altcoins active, upside momentum")
         elif ab <= -0.2:
             interpretations.append(f"🪙 山寨宽度 {ab:+.1%} — 山寨普遍承压")
+            interpretations_en.append(f"🪙 Alt breadth {ab:+.1%} — altcoins broadly under pressure")
         else:
             interpretations.append(f"🪙 山寨宽度 {ab:+.1%} — 山寨分化，跟随龙头")
+            interpretations_en.append(f"🪙 Alt breadth {ab:+.1%} — altcoins diverging, follow leaders")
 
     btc_run = m["btc_run"]
     eth_run = m["eth_run"]

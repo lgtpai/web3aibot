@@ -1287,9 +1287,9 @@ async function loadHistory() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${rec.created_readable}</td>
-        <td>${rec.plan_label}</td>
+        <td>${lang==='en' && rec.plan_label_en ? rec.plan_label_en : rec.plan_label}</td>
         <td>${rec.price} PHRS</td>
-        <td class="${statusClass}">${rec.status}</td>
+        <td class="${statusClass}">${lang==='en' ? (rec.status_en||rec.status) : rec.status}</td>
         <td>${txCell}</td>
       `;
       tbody.appendChild(tr);
@@ -1631,7 +1631,7 @@ async function startPayment() {
       toast(`🎉 ${t('buy_success')} ${subData.quantity || qty} ${t('times_unit')}`, 'ok', 5000);
     } else {
       state.subExpiresAt = subData.expires_at;
-      toast(`🎉 ${t('unlock_success')} ${subData.plan_label} ${t('valid_until')} ${subData.expires_readable}`, 'ok', 5000);
+      toast(`🎉 ${t('unlock_success')} ${lang==='en' && subData.plan_label_en ? subData.plan_label_en : subData.plan_label} ${t('valid_until')} ${subData.expires_readable}`, 'ok', 5000);
     }
     saveSession();
 
@@ -1880,10 +1880,10 @@ function renderPaidCard(d) {
   document.getElementById('paidContentCard').style.display = '';
 
   document.getElementById('pdSupport').textContent = d.support_fmt || '—';
-  document.getElementById('pdSupportTime').textContent = d.support_time ? '推送时间: ' + d.support_time.slice(0,10) : '';
-  document.getElementById('pdResist').textContent = d.resistance_fmt || '—';
-  document.getElementById('pdResistTime').textContent = d.resistance_time ? '推送时间: ' + d.resistance_time.slice(0,10) : '';
-  document.getElementById('pdRange').textContent = d.range_pct || '—';
+  document.getElementById('pdSupportTime').textContent = d.support_time ? (lang==='en' ? 'Push date: ' : '推送时间: ') + d.support_time.slice(0,10) : '';
+  document.getElementById('pdResist').textContent = (lang==='en' ? d.resistance_fmt_en : d.resistance_fmt) || '—';
+  document.getElementById('pdResistTime').textContent = d.resistance_time ? (lang==='en' ? 'Push date: ' : '推送时间: ') + d.resistance_time.slice(0,10) : '';
+  document.getElementById('pdRange').textContent = (lang==='en' ? d.range_pct_en : d.range_pct) || '—';
   document.getElementById('pdRegime').textContent = (lang==='en' ? d.market_regime_label_en : d.market_regime_label) || '—';
 
   const sigList = document.getElementById('pdSignals');
