@@ -1937,14 +1937,16 @@ async function unlockMarket() {
     const d = await r.json();
 
     document.getElementById('mkBreadth').textContent = d.breadth != null ? (d.breadth*100).toFixed(0)+'%' : '—';
-    document.getElementById('mkBtc').textContent = d.btc_state_label || '—';
-    document.getElementById('mkEth').textContent = d.eth_state_label || '—';
+    document.getElementById('mkBtc').textContent = (lang==='en' ? d.btc_state_label_en : d.btc_state_label) || '—';
+    document.getElementById('mkEth').textContent = (lang==='en' ? d.eth_state_label_en : d.eth_state_label) || '—';
 
     const mktCard = document.getElementById('marketCard');
     const extraDiv = document.createElement('div');
     extraDiv.style.cssText = 'margin-top:12px;font-size:12px;line-height:1.8;color:var(--text2)';
-    const interp = (d.interpretations||[]).join(' · ') || '';
-    extraDiv.innerHTML = `<div style="color:var(--text);font-weight:600;margin-bottom:4px">${d.overall||''}</div>${interp}`;
+    const interpArr = (lang==='en' ? d.interpretations_en : null) || d.interpretations || [];
+    const interp = interpArr.join(' · ');
+    const overallText = (lang==='en' ? d.overall_en : d.overall) || '';
+    extraDiv.innerHTML = `<div style="color:var(--text);font-weight:600;margin-bottom:4px">${overallText}</div>${interp}`;
 
     const oldExtra = mktCard.querySelector('.market-extra');
     if (oldExtra) oldExtra.remove();
